@@ -3,6 +3,10 @@ from picamera import PiCamera
 import time
 import cv2
 
+"""
+Captures and displays a single image.
+"""
+
 # we want to use rawcapture here, direct access to the camera stream
 camera = PiCamera()
 rawCapture = PiRGBArray(camera)
