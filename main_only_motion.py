@@ -43,8 +43,7 @@ def get_camera():
 
 
 def scan(camera, capture, hue, strategy):
-    human_detector = HumanDetector()
-    motion_detector = MotionDetector(min_area=300)
+    motion_detector = MotionDetector(min_area=500)
 
     initial_frame = None
     for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
@@ -57,19 +56,14 @@ def scan(camera, capture, hue, strategy):
         light_status = hue.is_group_on(strategy.hue_group)
         frame = frame.array
         motion_rects = motion_detector.detect(initial_frame, frame)
-        if len(list(motion_rects)) > 0:
-            print("found motion {}".format(list(motion_rects)))
-
-            (human_rects, human_weights) = human_detector.detect(frame)
-            # TODO we should also check that the rects are overlapping
-            if len(human_rects) > 0:
-                print("found humans, turning on {} lights".format(strategy.hue_group))
-                hue.set_light_group_brightness(strategy.hue_group, strategy.brightness())
-                hue.turn_group_on(strategy.hue_group)
-                switched = True
-                break 
-
-        elif hue.is_group_on(strategy.hue_group):
+        if len(list(motion_rects)) > 0 and not light_status:
+            print("found motion, turning on lights")
+            hue.set_light_group_brightness(strategy.hue_group, strategy.brightness())
+            hue.turn_group_on(strategy.hue_group)
+            # since we turned the lights on, we want to sleep and stop watching
+            break
+            
+        elif light_status:
             print("turning off {} lights".format(strategy.hue_group))
             hue.turn_group_off(strategy.hue_group)
 
@@ -92,7 +86,7 @@ def main():
     # print(hue.bridge.get_group("Kitchen", "on"))
 
     # create a strategy
-    strategy = HueStrategy("Kitchen", lambda: 70, lambda: 120)
+    strategy = HueStrategy("Kitchen", lambda: 40, lambda: 10)
 
     while True:
         # create a camera

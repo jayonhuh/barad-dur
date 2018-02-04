@@ -10,7 +10,7 @@ class HumanDetector:
         self.hog = cv2.HOGDescriptor()
         self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
-    def detect(self, image, winStride=(4, 4), padding=(6, 6), scale=1.05):
+    def detect(self, image, winStride=(4,4), padding=(6,6), scale=1.05):
         """
         Detects humans in the given image.
 
@@ -19,7 +19,7 @@ class HumanDetector:
         """
         before = time.time()
         image = imutils.resize(image, width=min(300, image.shape[1]))
-        boxes = self.hog.detectMultiScale(image, winStride, padding, scale)
+        boxes = self.hog.detectMultiScale(image, winStride=winStride, padding=padding, scale=scale)
         after = time.time()
-        print("took {}s to find bounding boxes {}".format(after - before, boxes))
+        print("took {}s to find bounding boxes and weights {}".format(after - before, boxes))
         return boxes
