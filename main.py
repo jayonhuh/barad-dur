@@ -104,5 +104,6 @@ def main():
         print("sleeping for {}s".format(result.sleep_time))
 
 
-
+if __name__ == "__main__":
+        main()
 
