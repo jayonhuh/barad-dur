@@ -45,6 +45,7 @@ def get_camera():
 def scan(camera, capture, hue, strategy):
     human_detector = HumanDetector()
     motion_detector = MotionDetector(min_area=300)
+    human_threshold = 0.2
 
     initial_frame = None
     for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
@@ -54,20 +55,23 @@ def scan(camera, capture, hue, strategy):
             capture.truncate(0)
             continue
 
-        light_status = hue.is_group_on(strategy.hue_group)
         frame = frame.array
         motion_rects = motion_detector.detect(initial_frame, frame)
         if len(list(motion_rects)) > 0:
             print("found motion {}".format(list(motion_rects)))
 
             (human_rects, human_weights) = human_detector.detect(frame)
+            # filter on a small threshold to avoid false positives
+            filtered_weights = filter(lambda w: w > human_threshold, human_weights)
             # TODO we should also check that the rects are overlapping
-            if len(human_rects) > 0:
-                print("found humans, turning on {} lights".format(strategy.hue_group))
+            if len(list(filtered_weights)) > 0:
+                print("found humans above threshold {}, turning on {} lights".format(human_threshold, strategy.hue_group))
                 hue.set_light_group_brightness(strategy.hue_group, strategy.brightness())
                 hue.turn_group_on(strategy.hue_group)
-                switched = True
-                break 
+                break
+            # just print that we are likely avoiding a false positive
+            elif len(human_rects > 0):
+                print("found humans below threshold {} (likely false positive)".format(human_threshold))
 
         elif hue.is_group_on(strategy.hue_group):
             print("turning off {} lights".format(strategy.hue_group))
