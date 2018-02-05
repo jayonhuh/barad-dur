@@ -64,6 +64,7 @@ def scan(camera, capture, hue, strategy):
     human_threshold = 0.2
 
     initial_frame = None
+    print("scanning video stream...")
     for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
         # make sure we initialize the first frame TODO look for a nicer to consume the first frame
         if initial_frame is None:
