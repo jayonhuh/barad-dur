@@ -1,6 +1,4 @@
 
-
-
 # loop over the video frames
 
 # check for motion
@@ -25,6 +23,7 @@ from optics.human_detector import HumanDetector
 from optics.motion_detector import MotionDetector
 from model.hue_strategy import HueStrategy
 from model.hue_state_change import HueStateChangeEvent
+from util.graceful_killer import GracefulKiller
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 
@@ -35,16 +34,31 @@ import sys
 import time
 
 def get_camera():
-    resolution= (640, 480)
+    """
+    Connects to the camera
+
+    :return: a handle to the camera and its capture feed
+    """
+    resolution = (640, 480)
     camera = PiCamera()
     camera.resolution = resolution
     camera.framerate = 8
     raw_capture = PiRGBArray(camera, size=resolution)
+    # warmup the sensor array
     time.sleep(0.1)
     return (camera, raw_capture)
 
 
 def scan(camera, capture, hue, strategy):
+    """
+    Scans the video stream for motion and humans.
+
+    :param camera:
+    :param capture:
+    :param hue:
+    :param strategy:
+    :return:
+    """
     human_detector = HumanDetector()
     motion_detector = MotionDetector(min_area=300)
     human_threshold = 0.2
@@ -67,7 +81,8 @@ def scan(camera, capture, hue, strategy):
             filtered_weights = filter(lambda w: w > human_threshold, human_weights)
             # TODO we should also check that the rects are overlapping
             if len(list(filtered_weights)) > 0:
-                print("found humans above threshold {}, turning on {} lights".format(human_threshold, strategy.hue_group))
+                print \
+                    ("found humans above threshold {}, turning on {} lights".format(human_threshold, strategy.hue_group))
                 hue.set_light_group_brightness(strategy.hue_group, strategy.brightness())
                 hue.turn_group_on(strategy.hue_group)
                 break
@@ -90,6 +105,10 @@ def scan(camera, capture, hue, strategy):
     return HueStateChangeEvent(strategy.sleep_when_on)
 
 def get_brightness():
+    """
+    TODO this should lookup sunrise and sunset time
+    :return: the brightness we should set the lights to based on time of day.
+    """
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
     # late night
     if hour <= 3:
@@ -108,13 +127,17 @@ def get_brightness():
 
 
 def get_sleep_time():
+    """
+    TODO this should lookup sunrise and sunset time
+    :return: the amount of time (in seconds) that we should sleep for after turning the lights on.
+    """
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
     # late night
     if hour <= 1:
-        return 180
+        return 360
     # late night
     elif hour <= 8:
-        return 60
+        return 120
     # early morning
     elif hour <= 10:
         return 180
@@ -125,19 +148,24 @@ def get_sleep_time():
     elif hour <= 22:
         return 600
     else:
-        return 180
+        return 360
 
 
 
 def main():
-    hue = HueWrapper("10.0.1.35")
+    """
+    Main script loop.
 
-    # hue.set_light_group_brightness("Kitchen", 0)
-    # hue.turn_group_on("Kitchen")
-    # print(hue.bridge.get_group("Kitchen", "on"))
+    Creates a hue wrapper and monitors the video stream.
+    :return:
+    """
+    hue = HueWrapper("10.0.1.35")
 
     # create a strategy
     strategy = HueStrategy("Kitchen", lambda: get_brightness(), lambda: get_sleep_time())
+
+    # handle sigkill signals when we get restarted
+    killer = GracefulKiller()
 
     while True:
         # create a camera
@@ -146,13 +174,16 @@ def main():
         # call the other method scan
         result = scan(camera, capture, hue, strategy)
 
-        # close the camera and sleep
-        camera.close()
-        capture.close()
+        if killer.kill_now:
+            print("received shutdown signal, closing video stream")
+            # close the camera and sleep
+            camera.close()
+            capture.close()
+            break
+
         print("sleeping for {}s".format(result.sleep_time()))
         time.sleep(result.sleep_time())
 
 
 if __name__ == "__main__":
         main()
-
