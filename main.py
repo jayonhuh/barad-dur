@@ -96,7 +96,7 @@ def main():
     # print(hue.bridge.get_group("Kitchen", "on"))
 
     # create a strategy
-    strategy = HueStrategy("Kitchen", lambda: 70, lambda: 120)
+    strategy = HueStrategy("Kitchen", lambda: 100, lambda: 120)
 
     while True:
         # create a camera
