@@ -52,7 +52,9 @@ while True:
         last_mtime = max_mtime
         print("killing process")
         process.kill()
-        time.sleep(10)
+        print_stdout(process)
+        print_stderr(process)
+        time.sleep(5)
         print('Restarting process.')
         process = subprocess.Popen(command, shell=True)
 

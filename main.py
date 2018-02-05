@@ -172,16 +172,19 @@ def main():
 
     while True:
         # create a camera
-        (camera, capture) = get_camera()
+        try:
+            (camera, capture) = get_camera()
+            # scan the video stream
+            result = scan(camera, capture, hue, strategy)
 
-        # call the other method scan
-        result = scan(camera, capture, hue, strategy)
+        finally:
+            # close the streams
+            camera.close()
+            capture.close()
 
         if killer.kill_now:
             print("received shutdown signal, closing video stream")
             # close the camera and sleep
-            camera.close()
-            capture.close()
             break
 
         print("sleeping for {}s".format(result.sleep_time()))
