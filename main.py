@@ -29,6 +29,8 @@ from picamera.array import PiRGBArray
 from picamera import PiCamera
 
 import cv2
+import datetime
+import pytz
 import sys
 import time
 
@@ -87,6 +89,48 @@ def scan(camera, capture, hue, strategy):
 
     return HueStateChangeEvent(strategy.sleep_when_on)
 
+def get_brightness():
+    hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
+    # late night
+    if hour <= 1:
+        return 70
+    # late night
+    elif hour <= 8:
+        return 40
+    # early morning
+    elif hour <= 10:
+        return 100
+    # during work
+    elif hour <= 17:
+        return 50
+    # evening
+    elif hour <= 22:
+        return 100
+    else:
+        return 80
+
+
+def get_sleep_time():
+    hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
+    # late night
+    if hour <= 1:
+        return 180
+    # late night
+    elif hour <= 8:
+        return 60
+    # early morning
+    elif hour <= 10:
+        return 180
+    # during work
+    elif hour <= 17:
+        return 45
+    # evening
+    elif hour <= 22:
+        return 600
+    else:
+        return 180
+
+
 
 def main():
     hue = HueWrapper("10.0.1.35")
@@ -96,7 +140,7 @@ def main():
     # print(hue.bridge.get_group("Kitchen", "on"))
 
     # create a strategy
-    strategy = HueStrategy("Kitchen", lambda: 100, lambda: 120)
+    strategy = HueStrategy("Kitchen", lambda: get_brightness(), lambda: get_sleep_time())
 
     while True:
         # create a camera
