@@ -108,12 +108,13 @@ def scan(camera, capture, hue, strategy):
 def get_brightness():
     """
     TODO this should lookup sunrise and sunset time
+    TODO this should return a tuple and be combined with get_brightness()
     :return: the brightness we should set the lights to based on time of day.
     """
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
     # late night
     if hour <= 3:
-        return 70
+        return 60
     # late night
     elif hour <= 8:
         return 25
@@ -130,6 +131,7 @@ def get_brightness():
 def get_sleep_time():
     """
     TODO this should lookup sunrise and sunset time
+    TODO this should return a tuple and be combined with get_brightness()
     :return: the amount of time (in seconds) that we should sleep for after turning the lights on.
     """
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
