@@ -38,7 +38,7 @@ def get_camera():
     resolution= (640, 480)
     camera = PiCamera()
     camera.resolution = resolution
-    camera.framerate = 2
+    camera.framerate = 8
     raw_capture = PiRGBArray(camera, size=resolution)
     time.sleep(0.1)
     return (camera, raw_capture)
@@ -92,22 +92,19 @@ def scan(camera, capture, hue, strategy):
 def get_brightness():
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
     # late night
-    if hour <= 1:
+    if hour <= 3:
         return 70
     # late night
     elif hour <= 8:
-        return 40
+        return 30
     # early morning
     elif hour <= 10:
         return 100
     # during work
     elif hour <= 17:
         return 50
-    # evening
-    elif hour <= 22:
-        return 100
     else:
-        return 80
+        return 100
 
 
 def get_sleep_time():
