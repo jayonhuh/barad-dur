@@ -170,6 +170,8 @@ def main():
     # handle sigkill signals when we get restarted
     killer = GracefulKiller()
 
+    (camera, capture, result) = None, None, None
+
     while True:
         # create a camera
         try:
