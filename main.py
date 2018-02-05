@@ -115,7 +115,7 @@ def get_brightness():
         return 70
     # late night
     elif hour <= 8:
-        return 30
+        return 25
     # early morning
     elif hour <= 10:
         return 100
