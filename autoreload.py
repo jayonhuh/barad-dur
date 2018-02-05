@@ -50,9 +50,10 @@ while True:
     print_stderr(process)
     if max_mtime > last_mtime:
         last_mtime = max_mtime
-        print('Restarting process.')
+        print("killing process")
         process.kill()
-        time.sleep(1)
+        time.sleep(10)
+        print('Restarting process.')
         process = subprocess.Popen(command, shell=True)
 
     max_mtime = max(file_times(path))
