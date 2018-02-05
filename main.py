@@ -181,8 +181,10 @@ def main():
 
         finally:
             # close the streams
-            camera.close()
-            capture.close()
+            if camera is not None:
+                camera.close()
+            if capture is not None:
+                capture.close()
 
         if killer.kill_now:
             print("received shutdown signal, closing video stream")
