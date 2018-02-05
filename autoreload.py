@@ -22,6 +22,12 @@ def print_stdout(process):
         print(stdout)
 
 
+def print_stderr(process):
+    stderr = process.stderr
+    if stderr != None:
+        print(stderr)
+
+
 # We concatenate all of the arguments together, and treat that as the command to run
 command = ' '.join(sys.argv[1:])
 
@@ -36,15 +42,19 @@ process = subprocess.Popen(command, shell=True)
 
 # The current maximum file modified time under the watched directory
 last_mtime = max(file_times(path))
+max_mtime = last_mtime
 
 
 while True:
-    max_mtime = max(file_times(path))
     print_stdout(process)
+    print_stderr(process)
     if max_mtime > last_mtime:
         last_mtime = max_mtime
         print('Restarting process.')
         process.kill()
+        time.sleep(1)
         process = subprocess.Popen(command, shell=True)
+
+    max_mtime = max(file_times(path))
     time.sleep(wait)
 
