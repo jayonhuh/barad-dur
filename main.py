@@ -70,7 +70,7 @@ def scan(camera, capture, hue, strategy):
                 hue.turn_group_on(strategy.hue_group)
                 break
             # just print that we are likely avoiding a false positive
-            elif len(human_rects > 0):
+            elif len(human_rects) > 0:
                 print("found humans below threshold {} (likely false positive)".format(human_threshold))
 
         elif hue.is_group_on(strategy.hue_group):

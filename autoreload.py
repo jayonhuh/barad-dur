@@ -19,7 +19,7 @@ def file_times(path):
 def print_stdout(process):
     stdout = process.stdout
     if stdout != None:
-        print stdout
+        print(stdout)
 
 
 # We concatenate all of the arguments together, and treat that as the command to run
@@ -43,7 +43,7 @@ while True:
     print_stdout(process)
     if max_mtime > last_mtime:
         last_mtime = max_mtime
-        print 'Restarting process.'
+        print('Restarting process.')
         process.kill()
         process = subprocess.Popen(command, shell=True)
     time.sleep(wait)
