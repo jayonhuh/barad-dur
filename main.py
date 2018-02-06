@@ -42,7 +42,10 @@ def get_camera():
     resolution = (640, 480)
     camera = PiCamera()
     camera.resolution = resolution
-    camera.framerate = 8
+    camera.framerate = 2
+    camera.contrast = 100
+    # camera.brightness = 100
+    camera.iso = 800
     raw_capture = PiRGBArray(camera, size=resolution)
     # warmup the sensor array
     time.sleep(0.1)
@@ -60,7 +63,7 @@ def scan(camera, capture, hue, strategy):
     :return:
     """
     human_detector = HumanDetector()
-    motion_detector = MotionDetector(min_area=300)
+    motion_detector = MotionDetector(min_area=250)
     human_threshold = 0.2
 
     initial_frame = None
