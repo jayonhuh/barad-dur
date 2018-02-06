@@ -152,7 +152,7 @@ def get_sleep_time():
         return 45
     # evening
     elif hour <= 22:
-        return 500
+        return 550
     else:
         return 360
 
