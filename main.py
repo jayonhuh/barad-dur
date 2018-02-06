@@ -63,7 +63,7 @@ def scan(camera, capture, hue, strategy):
     :return:
     """
     human_detector = HumanDetector()
-    motion_detector = MotionDetector(min_area=250)
+    motion_detector = MotionDetector(min_area=300)
     human_threshold = 0.2
 
     initial_frame = None
