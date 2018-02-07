@@ -80,6 +80,11 @@ def scan(camera, capture, hue, strategy):
         if len(list(motion_rects)) > 0:
             print("found motion {}".format(list(motion_rects)))
 
+            # the lights are already on and we found motion. leave them on and go back to sleep.
+            # its too slow to rely on the person detector here
+            if hue.is_group_on(strategy.hue_group):
+                break
+
             (human_rects, human_weights) = human_detector.detect(frame)
             # filter on a small threshold to avoid false positives
             filtered_weights = filter(lambda w: w > human_threshold, human_weights)
@@ -117,7 +122,7 @@ def get_brightness():
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
     # late night
     if hour <= 3:
-        return 60
+        return 20
     # late night
     elif hour <= 8:
         return 20
@@ -152,7 +157,7 @@ def get_sleep_time():
         return 45
     # evening
     elif hour <= 22:
-        return 550
+        return 500
     else:
         return 360
 
