@@ -24,6 +24,7 @@ from optics.motion_detector import MotionDetector
 from model.hue_strategy import HueStrategy
 from model.hue_state_change import HueStateChangeEvent
 from picamera.array import PiRGBArray
+from util.storm import Storm
 from picamera import PiCamera
 from threading import Event
 
@@ -131,17 +132,22 @@ def get_brightness():
     :return: the brightness we should set the lights to based on time of day.
     """
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
+
+    sunrise = Storm.getSunrise()
+    sunset = Storm.getSunset()
+
+
     # late night
     if hour <= 3:
         return 20
     # late night
-    elif hour <= 8:
+    elif hour <= 5:
         return 20
     # early morning
-    elif hour <= 10:
+    elif hour <= sunrise[0]:
         return 100
     # during work
-    elif hour <= 17:
+    elif hour <= sunset[0]:
         return 50
     else:
         return 100
