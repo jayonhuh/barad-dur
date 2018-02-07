@@ -74,12 +74,10 @@ def scan(camera, capture, hue, strategy):
     stream = camera.capture_continuous(capture, format="bgr", use_video_port=True)
 
     # discard the first few frames
-    next(stream)
-    capture.truncate(0)
-    next(stream)
-    capture.truncate(0)
-    next(stream)
-    capture.truncate(0)
+    for i in range(10):
+        next(stream)
+        capture.truncate(0)
+
     previous_frame = next(stream).array
     capture.truncate(0)
 
