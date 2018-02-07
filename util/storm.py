@@ -8,10 +8,10 @@ now = datetime.datetime.now()
 oakland = Location()
 oakland.name = 'Oakland'
 oakland.region = 'west'
-oakland.latitude = 37.778300
-oakland.longitude = -122.181294
+oakland.latitude = os.environ["LATITUDE"]
+oakland.longitude = os.environ["LONGITUDE"]
 oakland.timezone = 'US/Pacific'
-oakland.elevation = 35.6
+oakland.elevation = os.environ["ELEVATION"]
 oakland.sun()
 
 def getSunrise():
