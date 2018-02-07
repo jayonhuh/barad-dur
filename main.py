@@ -71,11 +71,11 @@ def scan(camera, capture, hue, strategy):
 
     print("scanning video stream...")
     stream = camera.capture_continuous(capture, format="bgr", use_video_port=True)
-    stream.next()
+    next(stream)
     capture.truncate(0)
-    stream.next()
+    next(stream)
     capture.truncate(0)
-    previous_frame = stream.next().array
+    previous_frame = next(stream)
     capture.truncate(0)
     for frame in stream:
         # make sure we initialize the first frame TODO look for a nicer to consume the first frame
