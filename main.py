@@ -193,6 +193,7 @@ def main():
         print("sleeping for {}s".format(result.sleep_time()))
         exit_handler.wait(result.sleep_time())
 
+    print("received exit signal, closing resources")
     if camera is not None:
         camera.close()
 
