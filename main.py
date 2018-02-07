@@ -1,4 +1,4 @@
-
+#!/usr/bin/python
 # loop over the video frames
 
 # check for motion
@@ -36,6 +36,7 @@ import time
 # handle sigkill signals when we get restarted
 exit_handler = Event()
 
+
 def get_camera():
     """
     Connects to the camera
@@ -71,20 +72,21 @@ def scan(camera, capture, hue, strategy):
 
     print("scanning video stream...")
     stream = camera.capture_continuous(capture, format="bgr", use_video_port=True)
-    next(stream)
-    capture.truncate(0)
-    next(stream)
-    capture.truncate(0)
-    previous_frame = next(stream)
-    capture.truncate(0)
-    for frame in stream:
-        # make sure we initialize the first frame TODO look for a nicer to consume the first frame
-        if previous_frame is None:
-            previous_frame = frame.array
-            capture.truncate(0)
-            continue
 
+    # discard the first few frames
+    next(stream)
+    capture.truncate(0)
+    next(stream)
+    capture.truncate(0)
+    next(stream)
+    capture.truncate(0)
+    previous_frame = next(stream).array
+    capture.truncate(0)
+
+    for frame in stream:
         frame = frame.array
+
+        # first check for motion
         motion_rects = motion_detector.detect(previous_frame, frame)
         if len(list(motion_rects)) > 0:
             print("found motion {}".format(list(motion_rects)))
@@ -94,6 +96,7 @@ def scan(camera, capture, hue, strategy):
             if hue.is_group_on(strategy.hue_group):
                 break
 
+            # if we found motion, continue by checking for humans
             (human_rects, human_weights) = human_detector.detect(frame)
             # filter on a small threshold to avoid false positives
             filtered_weights = filter(lambda w: w > human_threshold, human_weights)
@@ -121,6 +124,7 @@ def scan(camera, capture, hue, strategy):
             sys.exit(1)
 
     return HueStateChangeEvent(strategy.sleep_when_on)
+
 
 def get_brightness():
     """
@@ -170,10 +174,10 @@ def get_sleep_time():
     else:
         return 360
 
+
 def quit(signo, _frame):
     print("Interrupted by %d, shutting down" % signo)
     exit_handler.set()
-
 
 
 def main():
@@ -207,8 +211,10 @@ def main():
     if capture is not None:
         capture.close()
 
+
 if __name__ == "__main__":
 
+    # set up interrupt handler
     import signal
 
     for sig in ('TERM', 'HUP', 'INT'):
