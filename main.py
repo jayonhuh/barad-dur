@@ -1,4 +1,4 @@
-
+#!/usr/bin/python
 # loop over the video frames
 
 # check for motion
@@ -23,15 +23,20 @@ from optics.human_detector import HumanDetector
 from optics.motion_detector import MotionDetector
 from model.hue_strategy import HueStrategy
 from model.hue_state_change import HueStateChangeEvent
-from util.graceful_killer import GracefulKiller
 from picamera.array import PiRGBArray
+from util.storm import Storm
 from picamera import PiCamera
+from threading import Event
 
 import cv2
 import datetime
 import pytz
 import sys
 import time
+
+# handle sigkill signals when we get restarted
+exit_handler = Event()
+
 
 def get_camera():
     """
@@ -42,10 +47,13 @@ def get_camera():
     resolution = (640, 480)
     camera = PiCamera()
     camera.resolution = resolution
-    camera.framerate = 8
+    camera.framerate = 2
+    camera.contrast = 100
+    camera.brightness = 70
+    camera.iso = 800
     raw_capture = PiRGBArray(camera, size=resolution)
     # warmup the sensor array
-    time.sleep(0.1)
+    time.sleep(1)
     return (camera, raw_capture)
 
 
@@ -63,20 +71,31 @@ def scan(camera, capture, hue, strategy):
     motion_detector = MotionDetector(min_area=300)
     human_threshold = 0.2
 
-    initial_frame = None
     print("scanning video stream...")
-    for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
-        # make sure we initialize the first frame TODO look for a nicer to consume the first frame
-        if initial_frame is None:
-            initial_frame = frame.array
-            capture.truncate(0)
-            continue
+    stream = camera.capture_continuous(capture, format="bgr", use_video_port=True)
 
+    # discard the first few frames
+    for i in range(10):
+        next(stream)
+        capture.truncate(0)
+
+    previous_frame = next(stream).array
+    capture.truncate(0)
+
+    for frame in stream:
         frame = frame.array
-        motion_rects = motion_detector.detect(initial_frame, frame)
-        if len(list(motion_rects)) > 0:
-            print("found motion {}".format(list(motion_rects)))
 
+        # first check for motion
+        motion_rects = list(motion_detector.detect(previous_frame, frame))
+        if len(motion_rects) > 0:
+            print("found motion {}".format(motion_rects))
+
+            # the lights are already on and we found motion. leave them on and go back to sleep.
+            # its too slow to rely on the person detector here
+            if hue.is_group_on(strategy.hue_group):
+                break
+
+            # if we found motion, continue by checking for humans
             (human_rects, human_weights) = human_detector.detect(frame)
             # filter on a small threshold to avoid false positives
             filtered_weights = filter(lambda w: w > human_threshold, human_weights)
@@ -95,7 +114,7 @@ def scan(camera, capture, hue, strategy):
             print("turning off {} lights".format(strategy.hue_group))
             hue.turn_group_off(strategy.hue_group)
 
-        initial_frame = frame
+        previous_frame = frame
         # we need to truncate the buffer before the next iteration
         capture.truncate(0)
 
@@ -105,6 +124,7 @@ def scan(camera, capture, hue, strategy):
 
     return HueStateChangeEvent(strategy.sleep_when_on)
 
+
 def get_brightness():
     """
     TODO this should lookup sunrise and sunset time
@@ -112,17 +132,22 @@ def get_brightness():
     :return: the brightness we should set the lights to based on time of day.
     """
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
+
+    sunrise = Storm.getSunrise()
+    sunset = Storm.getSunset()
+
+
     # late night
     if hour <= 3:
-        return 60
+        return 20
     # late night
-    elif hour <= 8:
-        return 25
+    elif hour <= 5:
+        return 20
     # early morning
-    elif hour <= 10:
+    elif hour <= sunrise[0]:
         return 100
     # during work
-    elif hour <= 17:
+    elif hour <= sunset[0]:
         return 50
     else:
         return 100
@@ -149,10 +174,14 @@ def get_sleep_time():
         return 45
     # evening
     elif hour <= 22:
-        return 600
+        return 500
     else:
         return 360
 
+
+def quit(signo, _frame):
+    print("Interrupted by %d, shutting down" % signo)
+    exit_handler.set()
 
 
 def main():
@@ -167,29 +196,32 @@ def main():
     # create a strategy
     strategy = HueStrategy("Kitchen", lambda: get_brightness(), lambda: get_sleep_time())
 
-    # handle sigkill signals when we get restarted
-    killer = GracefulKiller()
+    (camera, capture, result) = None, None, None
 
-    while True:
+    while not exit_handler.is_set():
         # create a camera
-        try:
-            (camera, capture) = get_camera()
-            # scan the video stream
-            result = scan(camera, capture, hue, strategy)
-
-        finally:
-            # close the streams
-            camera.close()
-            capture.close()
-
-        if killer.kill_now:
-            print("received shutdown signal, closing video stream")
-            # close the camera and sleep
-            break
-
+        (camera, capture) = get_camera()
+        # scan the video stream
+        result = scan(camera, capture, hue, strategy)
+        camera.close()
+        capture.close()
         print("sleeping for {}s".format(result.sleep_time()))
-        time.sleep(result.sleep_time())
+        exit_handler.wait(result.sleep_time())
+
+    print("received exit signal, closing resources")
+    if camera is not None:
+        camera.close()
+
+    if capture is not None:
+        capture.close()
 
 
 if __name__ == "__main__":
-        main()
+
+    # set up interrupt handler
+    import signal
+
+    for sig in ('TERM', 'HUP', 'INT'):
+        signal.signal(getattr(signal, 'SIG' + sig), quit)
+
+    main()
