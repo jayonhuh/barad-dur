@@ -34,6 +34,9 @@ import pytz
 import sys
 import time
 
+# handle sigkill signals when we get restarted
+exit_handler = Event()
+
 def get_camera():
     """
     Connects to the camera
@@ -164,7 +167,7 @@ def get_sleep_time():
 
 def quit(signo, _frame):
     print("Interrupted by %d, shutting down" % signo)
-    exit.set()
+    exit_handler.set()
 
 
 
@@ -179,9 +182,6 @@ def main():
 
     # create a strategy
     strategy = HueStrategy("Kitchen", lambda: get_brightness(), lambda: get_sleep_time())
-
-    # handle sigkill signals when we get restarted
-    exit_handler = Event()
 
     (camera, capture, result) = None, None, None
 
