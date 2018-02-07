@@ -45,7 +45,7 @@ def get_camera():
     camera.resolution = resolution
     camera.framerate = 2
     camera.contrast = 100
-    # camera.brightness = 100
+    camera.brightness = 70
     camera.iso = 800
     raw_capture = PiRGBArray(camera, size=resolution)
     # warmup the sensor array
@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
     import signal
 
-    for sig in ('TERM', 'KILL', 'HUP', 'INT'):
+    for sig in ('TERM', 'HUP', 'INT'):
         signal.signal(getattr(signal, 'SIG' + sig), quit)
 
     main()
