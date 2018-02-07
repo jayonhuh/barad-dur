@@ -87,9 +87,9 @@ def scan(camera, capture, hue, strategy):
         frame = frame.array
 
         # first check for motion
-        motion_rects = motion_detector.detect(previous_frame, frame)
-        if len(list(motion_rects)) > 0:
-            print("found motion {}".format(list(motion_rects)))
+        motion_rects = list(motion_detector.detect(previous_frame, frame))
+        if len(motion_rects) > 0:
+            print("found motion {}".format(motion_rects))
 
             # the lights are already on and we found motion. leave them on and go back to sleep.
             # its too slow to rely on the person detector here
