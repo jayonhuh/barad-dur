@@ -23,7 +23,6 @@ from optics.human_detector import HumanDetector
 from optics.motion_detector import MotionDetector
 from model.hue_strategy import HueStrategy
 from model.hue_state_change import HueStateChangeEvent
-from util.graceful_killer import GracefulKiller
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 from threading import Event
@@ -52,7 +51,7 @@ def get_camera():
     camera.iso = 800
     raw_capture = PiRGBArray(camera, size=resolution)
     # warmup the sensor array
-    time.sleep(0.1)
+    time.sleep(1)
     return (camera, raw_capture)
 
 
@@ -70,17 +69,23 @@ def scan(camera, capture, hue, strategy):
     motion_detector = MotionDetector(min_area=300)
     human_threshold = 0.2
 
-    initial_frame = None
     print("scanning video stream...")
-    for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
+    stream = camera.capture_continuous(capture, format="bgr", use_video_port=True)
+    stream.next()
+    capture.truncate(0)
+    stream.next()
+    capture.truncate(0)
+    previous_frame = stream.next().array
+    capture.truncate(0)
+    for frame in stream:
         # make sure we initialize the first frame TODO look for a nicer to consume the first frame
-        if initial_frame is None:
-            initial_frame = frame.array
+        if previous_frame is None:
+            previous_frame = frame.array
             capture.truncate(0)
             continue
 
         frame = frame.array
-        motion_rects = motion_detector.detect(initial_frame, frame)
+        motion_rects = motion_detector.detect(previous_frame, frame)
         if len(list(motion_rects)) > 0:
             print("found motion {}".format(list(motion_rects)))
 
@@ -107,7 +112,7 @@ def scan(camera, capture, hue, strategy):
             print("turning off {} lights".format(strategy.hue_group))
             hue.turn_group_off(strategy.hue_group)
 
-        initial_frame = frame
+        previous_frame = frame
         # we need to truncate the buffer before the next iteration
         capture.truncate(0)
 
@@ -190,6 +195,8 @@ def main():
         (camera, capture) = get_camera()
         # scan the video stream
         result = scan(camera, capture, hue, strategy)
+        camera.close()
+        capture.close()
         print("sleeping for {}s".format(result.sleep_time()))
         exit_handler.wait(result.sleep_time())
 
