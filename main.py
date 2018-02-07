@@ -26,6 +26,7 @@ from model.hue_state_change import HueStateChangeEvent
 from util.graceful_killer import GracefulKiller
 from picamera.array import PiRGBArray
 from picamera import PiCamera
+from threading import Event
 
 import cv2
 import datetime
@@ -161,6 +162,10 @@ def get_sleep_time():
     else:
         return 360
 
+def quit(signo, _frame):
+    print("Interrupted by %d, shutting down" % signo)
+    exit.set()
+
 
 
 def main():
@@ -176,30 +181,29 @@ def main():
     strategy = HueStrategy("Kitchen", lambda: get_brightness(), lambda: get_sleep_time())
 
     # handle sigkill signals when we get restarted
-    killer = GracefulKiller()
+    exit_handler = Event()
 
     (camera, capture, result) = None, None, None
 
-    while True:
+    while not exit_handler.is_set():
         # create a camera
-        try:
-            (camera, capture) = get_camera()
-            # scan the video stream
-            result = scan(camera, capture, hue, strategy)
-            print("sleeping for {}s".format(result.sleep_time()))
-            time.sleep(result.sleep_time())
+        (camera, capture) = get_camera()
+        # scan the video stream
+        result = scan(camera, capture, hue, strategy)
+        print("sleeping for {}s".format(result.sleep_time()))
+        exit_handler.wait(result.sleep_time())
 
-        finally:
-            # close the streams
-            if camera is not None:
-                camera.close()
-            if capture is not None:
-                capture.close()
+    if camera is not None:
+        camera.close()
 
-        if killer.kill_now:
-            print("received shutdown signal")
-            break
-
+    if capture is not None:
+        capture.close()
 
 if __name__ == "__main__":
-        main()
+
+    import signal
+
+    for sig in ('TERM', 'KILL', 'HUP', 'INT'):
+        signal.signal(getattr(signal, 'SIG' + sig), quit)
+
+    main()
