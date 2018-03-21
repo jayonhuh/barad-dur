@@ -24,7 +24,7 @@ from optics.motion_detector import MotionDetector
 from model.hue_strategy import HueStrategy
 from model.hue_state_change import HueStateChangeEvent
 from picamera.array import PiRGBArray
-from util.storm import *
+from util.storm import Storm
 from picamera import PiCamera
 from threading import Event
 
@@ -133,8 +133,8 @@ def get_brightness():
     """
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
 
-    sunrise = getSunrise()
-    sunset = getSunset()
+    sunrise = Storm.getSunrise()
+    sunset = Storm.getSunset()
 
 
     # late night
