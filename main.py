@@ -24,7 +24,7 @@ from optics.motion_detector import MotionDetector
 from model.hue_strategy import HueStrategy
 from model.hue_state_change import HueStateChangeEvent
 from picamera.array import PiRGBArray
-from util.storm import Storm
+from util.storm import *
 from picamera import PiCamera
 from threading import Event
 
