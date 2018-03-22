@@ -1,8 +1,8 @@
 import datetime
 from astral import *
+import os
 
 now = datetime.datetime.now()
-
 
 # Establish a location named oakland
 oakland = Location()
