@@ -163,7 +163,7 @@ def get_sleep_time():
     # late night
     if hour <= 1:
         return 360
-    # late night
+    # sleep time
     elif hour <= 8:
         return 120
     # early morning
@@ -171,10 +171,10 @@ def get_sleep_time():
         return 180
     # during work
     elif hour <= 17:
-        return 45
+        return 300
     # evening
     elif hour <= 22:
-        return 500
+        return 900
     else:
         return 360
 
