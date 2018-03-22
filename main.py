@@ -133,8 +133,8 @@ def get_brightness():
     """
     hour = datetime.datetime.now(pytz.timezone('US/Pacific')).hour
 
-    sunrise = Storm.getSunrise()
-    sunset = Storm.getSunset()
+    sunrise = getSunrise()
+    sunset = getSunset()
 
 
     # late night
